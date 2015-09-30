@@ -158,6 +158,19 @@ var cases2 = [
 		'case': '25',
 		input: '(do (def apply (fun (f a) (f a))) (apply (fun (b) (+ 2 b)) 3))',
 		expected: 5
+	},{
+		'case': '26',
+		input: '(do ' +
+					'(def red '+
+						'(fun (L f agg) '+
+							'(if (empty L) agg '+
+								'(red (cdr L) f (f (car L) agg))))) '+
+					'(def a (list 1 2 3 4)) '+
+					'(def size '+
+						'(fun (K) '+
+							'(red K (fun (current agg) (+ 1 agg)) 0))) ' +
+					'(size a))',
+		expected: 4
 	}
 ];
 // for-loop
@@ -286,7 +299,17 @@ lazyOperators = {
             body: operands[1],
 			shadowScope: scopes
         };
-    }
+    },
+	"list": function (operands, scopes) {
+		if (operands.length == 0) {
+			console.log("warning! empty list");
+		}
+	    var expanded = (operands.length == 1) ? 
+			["cons", operands[0], "@"] :
+			["cons", operands[0], ["list"].concat(operands.slice(1))];
+		// console.log('expanded', expanded);
+		return evaluate(expanded, scopes);
+	}
 };
 
 var operators = {
@@ -300,8 +323,6 @@ var operators = {
     "/": function (a, b) { return a / b; },
 	"cons": function (a, b) {
 	    return {
-			type: 'list',
-			empty: false,
 			head: a,
 			tail: b
 		};
@@ -313,7 +334,7 @@ var operators = {
 		return a.tail;
 	},
 	"empty": function (a) { 
-		return a.empty
+		return a.empty == true;
 	},
     "print": function () {
 	    var operands = Array.prototype.slice.call(arguments, 0);
@@ -330,7 +351,7 @@ var reString = /^"[^"]*"$/;
 
 function evaluate(tree, scopes) {
    
-    console.log(JSON.stringify(tree));
+    // console.log(JSON.stringify(tree));
     if (typeof tree == 'string') {
         
         if (reInteger.test(tree)) {
@@ -342,24 +363,23 @@ function evaluate(tree, scopes) {
         } else if (tree == "@") {
 		    return { 
 				empty : true, 
-				type: 'list' 
 			};
 		} else {
             //console.log("look up var: " + tree);
             var val = scopes.get(tree);
-            console.log("value for %s is %s", tree, val);
+            // console.log("value for %s is %s", JSON.stringify(tree), JSON.stringify(val));
             return val;
         }
     }	
 	// console.log(tree[0]);
     //console.log(JSON.stringify(tree));
     var operator = lazyOperators[tree[0]];
-	//console.log("operator: "+ operator);
+	// console.log("operator: "+ operator);
 	
     if (operator != undefined) {
 		//console.log("operator is defined")
 		var result = operator.call(null, tree.slice(1), scopes);   
-		console.log("result: " + JSON.stringify(result));
+		// console.log("result: " + JSON.stringify(result));
 		return result;
     }
 	//console.log("operator is not defined");
@@ -375,17 +395,20 @@ function evaluate(tree, scopes) {
     
 	var func = null;
 	if (tree[0].type != 'fun') {
-	var funcName = tree[0];
+		// console.log("tree-0", tree[0]);
+		var funcName = tree[0];
 		var func = scopes.get(funcName);
+		// console.log("400 ", func);
 	} else {
 		//console.log("TYPE:", func.type);
 		func = tree[0];
+		// console.log("404", func);
 	}
     //console.log("func: " + JSON.stringify(func));
     var params = func.params;
     var body = func.body;
     var functionShadowScope = func.shadowScope;
-    console.log("params", params);
+    // console.log("params", params);
 	// console.log("operands", operands);
     var shadowingScope = (function shadowingScope() {
         var scope = {};
@@ -396,7 +419,7 @@ function evaluate(tree, scopes) {
         }
         
         for (var i=0; i<params.length; i++) {
-			console.log("setting %s to %s", params[i], operands[i]);
+			// console.log("setting %s to %s", params[i], operands[i]);
             scope[ params[i] ] = operands[i];   
         }
         
@@ -409,7 +432,7 @@ function evaluate(tree, scopes) {
                 return functionShadowScope.get(name);
             },
             set: function (name, val) {
-                console.log("setting %s to %s", name, val);
+                // console.log("setting %s to %s", name, val);
 				scope[name] = val;
             },
 			out: functionShadowScope.out,
