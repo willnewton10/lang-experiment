@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head></head>
+<body>
+	<h1>Language Experiment</h1>
+    <style>
+		body {
+			color: white;
+			background-color: #224;
+			font-family: monospace;
+		}
+		.text {
+			width: 100%;
+			border: 1px solid gray;
+			overflow-y: scroll;
+			font-size: 100%;
+			background-color: black;
+		}
+	    #in {
+			height: 400px;
+			color: #DDF;
+		}
+		#out {
+			height: 180px; 
+			color: #7D7;
+		}
+	</style>
+	<textarea cols=50 id='out' class='text'></textarea>
+	<!--<div id='in' class='text' 
+		contentEditable="true" >
+	</div>-->
+	<textarea cols='50' rows='10' id='in' class='text'>(do 
+  (def for 
+     (fun (i f)
+      (do 
+         (def _for (fun (j) 
+           (if (= j 10) 
+               "done" 
+               (do (f j) (_for (+ 1 j))))))
+         (_for 0)
+      )
+     )
+  )
+
+  (for 10 (fun (i) (print (+ "hello" i))))
+  (def x 0)
+  (def ++ (fun (x) (mut x (+ x 1))))
+  (print (++ (++ (++ (++ x)))))
+  (mut ++ (fun (x) (mut x (- x 1))))
+  (def y 0)
+  (for 10 (fun (i) (mut y (++ y))))
+  (print y)
+)
+	</textarea>
+	<br />
+	<input type='button' value='Run' onclick='runScript("run")' />
+	<input type='button' value='Parse' onclick='runScript("parse")' />
+	<script src='lang.js'></script>
+	
+	<script>
+		var out = document.getElementById('out');
+		var input = document.getElementById('in');
+	
+		input.focus();
+		
+		function runScript(what) {
+		    out.textContent = "";
+			var command = input.value; //input.textContent;
+			console.log(command);
+			
+			if (what == "run") {				
+				var scope = Scope(function print(a) {
+					console.log('printing...');
+					out.innerHTML += a + "\n";
+				});	
+				
+				var result = evaluate(parse(command), scope);
+				//out.innerHTML = result + "<br />";
+			}
+			else if (what == "parse") {
+				//command = command.replace(/\u00A0/g, ' ');
+				for (var i=0; i<command.length; i++) {
+				    console.log("char: " + command.charCodeAt(i));
+					if (command.charCodeAt(i) == 160) {
+						command[i] = " ";
+					}					
+				}
+				var parsed = parse(command);
+				out.innerHTML = parsed;
+				console.log(JSON.stringify(parsed));
+			}
+		}
+	
+	</script>
+</body>
+</html>
