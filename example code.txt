@@ -1,0 +1,103 @@
+(do 
+  (def first-equals (fun (L e) (= e (car L))))
+  (def skip-two (fun (L) (cdr (cdr L))))
+  (def second (fun (L) (car (cdr L))))
+  
+  (def list-equals (fun (A B)
+       (if (and (empty A) (empty B)) true
+       (if (or (empty A) (or (empty B))) false 
+           (and (= (car A) (car B)) 
+                (list-equals (cdr A) (cdr B)))
+       ))
+  ))
+
+  (def list-A (list 1 2 3))
+  (def list-B (list 1 2))
+  (def list-C (list 4 5 6))
+
+  (print (= false (list-equals list-A list-B)))
+  (print (= true (list-equals list-A list-A)))
+  (print (= false (list-equals list-A list-C)))
+  
+  (def list-D (list 1 2 3 4 5 6))
+
+  (def join (fun (L) 
+    (if (empty L) ""
+        (+ (car L) (join (cdr L)))
+    )
+  )) 
+
+  (print (join list-D))
+
+  (def take-odds (fun (L)
+       (if (empty L) @
+           (cons (car L) (take-odds (skip-two L)))
+       )
+  ))
+
+  (print (join (take-odds list-D))) 
+
+  (def all (fun (L f) 
+    (if (empty L) true
+	    (and (f (car L)) 
+	         (all (cdr L) f))
+	)
+  ))
+
+  (def any (fun (L f) 
+    (if (empty L) true
+	    (or (f (car L)) 
+		(any (cdr L) f))
+	)
+  ))
+  
+  (print (+ "All:" (all list-D 
+    (fun (i) (> i 0)))))
+
+  (print (+ "All:" (all list-D
+    (fun (i) (< i 0)))))
+  
+  (print (+ "Any:" (any list-D 
+    (fun (i) (> i 0)))))
+
+  (print (+ "Any:" (any list-D
+    (fun (i) (< i 0)))))
+  
+  (def map (fun (L)
+    (do 
+      (def f (fun (L k)
+             (if (empty L) "no-entry-for-key"
+             (if (first-equals L k) (second L) 
+                 (f (skip-two L) k)
+		     ))
+      ))
+      (def c (fun (L k) 
+        (if (empty L) false
+        (if (first-equals L k) true 
+            (c (skip-two L) k)
+        ))
+      ))
+      (fun (method key) 
+           (if (= method "get") (f L key) 
+           (if (= method "has") (c L key)
+               (+ "no-such-method" method)
+           )))
+  )))
+
+  (def my-list (list "a" "b" "c" "d"))
+  (def my-map (map my-list))
+
+  (print (my-map "get" "a"))
+  (print (my-map "get" "b"))
+  (print (my-map "get" "c"))
+  (print (my-map "get" "d"))
+
+  (print (+ "C:" (my-map "has" "c")))
+  (print (+ "A:" (my-map "has" "a")))
+  (print (+ "B:" (my-map "has" "b")))
+  (print (+ "C:" (my-map "has" "c")))
+  (print (+ "D:" (my-map "has" "d")))
+
+  (print (my-map "non-existant-method" "key"))
+)
+	
