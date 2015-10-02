@@ -8,7 +8,7 @@ var cases = [
     {
         'case' : 'add a difference',
         'input': "(+ (- 7 3) 8)",
-        'expected': { operator: "+", operands: [{ operator: "-", operands: ["7", "3"]}, "8"] }
+        'expected': ["+",["-","7","3"],"8"]
     }
 ];
 
@@ -173,31 +173,6 @@ var cases2 = [
 		expected: 4
 	}
 ];
-// for-loop
-/*
-(do 
-  (def for 
-     (fun (i f)
-      (do 
-         (def _for (fun (j) 
-           (if (= j 10) 
-               "done" 
-               (do (f j) (_for (+ 1 j))))))
-         (_for 0)
-      )
-     )
-  )
-
-  (for 10 (fun (i) (print (+ "hello" i))))
-  (def x 0)
-  (def ++ (fun (x) (mut x (+ x 1))))
-  (print (++ (++ (++ (++ x)))))
-  (mut ++ (fun (x) (mut x (- x 1))))
-  (def y 0)
-  (for 10 (fun (i) (mut y (++ y))))
-  (print y)
-)*/
-
 	//macro brainstorming:
 	/*				'(fn f a b (+ a b)) '+
 					'(def f (fun (a b) (+ a b)) '+
@@ -210,82 +185,6 @@ var cases2 = [
 						   '(#*=0 (cons #0 @)) '+
 						   '(#*>0 (cons #0 (list #*)))) ' +
 					*/
-// closure object
-/*
-(do
-  (def x (fun (a b c) (do
-    (def y a)
-    (def z b)
-    (def u c)
-    (fun (a)
-      (if (= a "y") y 
-      (if (= a "z") z
-      (if (= a "yB") (mut y (+ y "B"))
-      (if (= a "x") (u b)
-       "unknown"))))
-    )
-  )))
-
-  (def z (x "3" "4" (fun (a) (print (+ a "m")))))
-  (print (z "y"))
-  (print (z "z"))
-  (z "yB")
-  (print (z "y"))
-  (z "x")
-)
-*/
-
-// mapping
-/*
-(do 
-  (def first-equals (fun (L e) (= e (car L))))
-  (def skip-two (fun (L) (cdr (cdr L))))
-  (def second (fun (L) (car (cdr L))))
-
-  (def map (fun (L)
-    (do 
-      (def f (fun (L k)
-              (if (empty L) 
-                  "no-entry-for-key"
-                  (if (first-equals L k)
-                        (second L) 
-                        (f (skip-two L) k)
-                  )
-              )
-             )
-      )
-      (def c (fun (L k) 
-        (if (empty L) false
-            (if (first-equals L k) true 
-                (c (skip-two L) k)
-            )
-      )))
-      (fun (method key) 
-           (if (= method "get") (f L key) 
-           (if (= method "has") (c L key)
-               (+ "no-such-method" method)
-           )))
-  )))
-
-  (def my-list (list "a" "b" "c" "d"))
-  (def my-map (map my-list))
-
-  (print (my-map "get" "a"))
-  (print (my-map "get" "b"))
-  (print (my-map "get" "c"))
-  (print (my-map "get" "d"))
-
-  (print (+ "C:" (my-map "has" "c")))
-  (print (+ "A:" (my-map "has" "a")))
-  (print (+ "B:" (my-map "has" "b")))
-  (print (+ "C:" (my-map "has" "c")))
-  (print (+ "D:" (my-map "has" "d")))
-
-  (print (my-map "non-existant-method" "key"))
-)
-	
-)
-*/
 function findEnd(str, beginAt) {
     var count = 1;
     for (var i=beginAt + 1; i<str.length; i++) {
@@ -331,7 +230,6 @@ lazyOperators = {
         var already = scopes.get(name) != undefined;
         //if (already) console.log("value with name %s already exists in this scope", already);
         scopes.set(name, value);
-        // console.log("setting value [%s] set to [%s]", name, JSON.stringify(value));
     },
 	"mut": function (operands, scope) {
 		var name = operands[0];
@@ -344,13 +242,12 @@ lazyOperators = {
 		}
 		return value;
 	},
-    "fun": function (operands, scopes) {
-                    
+    "fun": function (operands, scopes) {                  
         return {
 			type: "fun",
             params: operands[0],
             body: operands[1],
-			shadowScope: scopes
+			scopes: scopes
         };
     },
 	"list": function (operands, scopes) {
@@ -426,92 +323,83 @@ function evaluate(tree, scopes) {
         } else if (reString.test(tree)) {
             return tree;
         } else if (tree == "@") {
-		    return { 
-				empty : true, 
-			};
+		    return { empty : true };
 		} else {
-            //console.log("look up var: " + tree);
-            var val = scopes.get(tree);
-            // console.log("value for %s is %s", JSON.stringify(tree), JSON.stringify(val));
-            return val;
+            return scopes.get(tree);
         }
     }	
-	//console.log(tree[0]);
-    //console.log(JSON.stringify(tree));
-    var operator = lazyOperators[tree[0]];
-	// console.log("operator: "+ operator);
+	var operator = undefined;
 	
-    if (operator != undefined) {
-		//console.log("operator is defined")
-		var result = operator.call(null, tree.slice(1), scopes);   
-		// console.log("result: " + JSON.stringify(result));
-		return result;
-    }
-	//console.log("operator is not defined");
-    
-    var operands = tree.slice(1).map(function (operand) {
+	if (typeof tree[0] == 'string') {
+        operator = lazyOperators[tree[0]];
+		if (operator != undefined) {
+			return operator.call(null, tree.slice(1), scopes);   
+		}
+	}
+	
+	var operands = tree.slice(1).map(function (operand) {
         return evaluate(operand, scopes);
     });
-    //console.log('hello');
-    operator = operators[tree[0]];
-    if (operator != undefined) {
-        return operator.apply(scopes, operands);
-    }
     
-	var func = null;
-	if (tree[0].type != 'fun') {
-		// console.log("tree-0", tree[0]);
-		var funcName = tree[0];
-		var func = scopes.get(funcName);
-		// console.log("400 ", func);
-	} else {
-		//console.log("TYPE:", func.type);
-		func = tree[0];
-		// console.log("404", func);
+	if (operators[tree[0]] != undefined) {
+		return operators[tree[0]].apply(scopes, operands);
 	}
-    //console.log("func: " + JSON.stringify(func));
-    var params = func.params;
-    var body = func.body;
-    var functionShadowScope = func.shadowScope;
-    // console.log("params", params);
-	// console.log("operands", operands);
-    var shadowingScope = (function shadowingScope() {
-        var scope = {};
-        var scopeName = funcName;
-        
-        if (params.length != operands.length) {
-           // console.log("wrong number of args: %s, %s %s", name, params, operands);
-        }
-        
-        for (var i=0; i<params.length; i++) {
-			// console.log("setting %s to %s", params[i], operands[i]);
-            scope[ params[i] ] = operands[i];   
-        }
-        
-        return {
-            get: function (name) {
-                if (Object.keys(scope).indexOf(name) != -1) {
-                    return scope[name];
-                } 
-                //console.log("shadowing scope %s cannot find value %s", scopeName, name);
-                return functionShadowScope.get(name);
-            },
-            set: function (name, val) {
-                // console.log("setting %s to %s", name, val);
-				scope[name] = val;
-            },
-			out: functionShadowScope.out,
-			find: function (name) {
-				if (Object.keys(scope).indexOf(name) == -1) {
-					return functionShadowScope.find(name);
-				}
-				return this;
-			}
-        }
-    })();
-    
-    return evaluate(body, shadowingScope);
+
+	var func, funcName;
+	
+	if (tree[0].type == 'fun') {
+		// function has already been evaluated and is being returned
+		func = tree[0];
+		funcName = "?";
+	} else if (typeof tree[0] == 'string') {
+		// we are evaluating a name pointing to a function
+		funcName = tree[0];
+		func = scopes.get(funcName);
+	} else if (tree[0][0] == 'fun') {
+		func = evaluate(tree[0], scopes);
+		funcName = "?";
+	}
+    // console.log(JSON.stringify(tree[0]));
+	
+	var shadowingScope = new ShadowScope(funcName, func.params, operands, func.scopes);
+	
+    return evaluate(func.body, shadowingScope);
 }
+
+function ShadowScope(scopeName, params, args, parentScope) {
+	this.scopeName = scopeName;
+	this.parentScope = parentScope;
+	this.scope = {};
+	this.out = parentScope.out;
+	
+	for (var i=0; i<params.length; i++) {
+		// console.log("in scope [%s], setting %s to %s", scopeName, params[i], JSON.stringify(args[i]));
+		this.scope[ params[i] ] = args[i];   
+    }
+	if (params.length != args.length) {
+	   // console.log("wrong number of args: %s, %s %s", name, params, operands);
+	}        
+}
+ShadowScope.prototype.has = function (name) {
+	return this.scope.hasOwnProperty(name);
+};
+ShadowScope.prototype.get = function (name) {
+	if (this.has(name)) {
+		return this.scope[name];
+	} 
+	//console.log("shadowing scope %s cannot find value %s", scopeName, name);
+	return this.parentScope.get(name);
+};
+ShadowScope.prototype.set = function (name, val) {
+	// console.log("in scope %s, setting %s to %s", this.scopeName, name, JSON.stringify(val));
+	this.scope[name] = val;
+};
+ShadowScope.prototype.find = function (name) {
+    if (this.has(name)) {
+		return this;
+	}
+	return this.parentScope.find(name);
+};
 
 function parse(raw) {
     raw = raw.replace(/[\n\t\r ]+/g, " ").trim();
@@ -634,6 +522,7 @@ function Scope(printFunction) {
     };
 }
 if (false) { cases2 = cases2.slice(cases2.length - 1); }
+
 testCases(cases2, 
           function(code) { return evaluate(parse(code), Scope()); }, 
           function(a, b) { return a === b; });

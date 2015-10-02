@@ -2,6 +2,64 @@
 
   //this is a comment!
 
+  //for-loop
+    (def for 
+     (fun (i f)
+      (do 
+         (def _for (fun (j) 
+           (if (= j 10) 
+               "done" 
+               (do (f j) (_for (+ 1 j))))))
+         (_for 0)
+      )
+     )
+  )
+
+  (for 10 (fun (i) (print (+ "hello" i))))
+  (def x 0)
+  (def ++ (fun (x) (mut x (+ x 1))))
+  (print (++ (++ (++ (++ x)))))
+  (mut ++ (fun (x) (mut x (- x 1))))
+  (def y 0)
+  (for 10 (fun (i) (mut y (++ y))))
+  (print y)
+  
+    // closure object
+  (def x (fun (a b c) (do
+    (def y a)
+    (def z b)
+    (def u c)
+    (fun (a)
+      (if (= a "y") y 
+      (if (= a "z") z
+      (if (= a "yB") (mut y (+ y "B"))
+      (if (= a "x") (u b)
+       "unknown"))))
+    )
+  )))
+
+  (def y (x "a" "b" "c"))
+
+   (print (y "y"))
+
+  (def z (x "3" "4" (fun (a) (print (+ a "m")))))
+  (print (z "y"))
+  (print (z "z"))
+  (z "yB")
+  (print (z "y"))
+  (z "x")
+
+
+  (for 10 (fun (i) (print (+ "hello" i))))
+  (def x 0)
+  (def ++ (fun (x) (mut x (+ x 1))))
+  (print (++ (++ (++ (++ x)))))
+  (mut ++ (fun (x) (mut x (- x 1))))
+  (def y 0)
+  (for 10 (fun (i) (mut y (++ y))))
+  (print y)
+
+
   (def first-equals (fun (L e) (= e (car L))))
   (def skip-two (fun (L) (cdr (cdr L))))
   (def second (fun (L) (car (cdr L))))
