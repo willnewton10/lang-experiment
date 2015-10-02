@@ -1,7 +1,11 @@
 (do 
+
+  //this is a comment!
+
   (def first-equals (fun (L e) (= e (car L))))
   (def skip-two (fun (L) (cdr (cdr L))))
   (def second (fun (L) (car (cdr L))))
+  (def cons-2 (fun (a b L) (cons a (cons b L))))
   
   (def list-equals (fun (A B)
        (if (and (empty A) (empty B)) true
@@ -65,23 +69,24 @@
   
   (def map (fun (L)
     (do 
-      (def f (fun (L k)
+      (def get (fun (L k)
              (if (empty L) "no-entry-for-key"
              (if (first-equals L k) (second L) 
-                 (f (skip-two L) k)
+                 (get (skip-two L) k)
 		     ))
       ))
-      (def c (fun (L k) 
+      (def has (fun (L k) 
         (if (empty L) false
         (if (first-equals L k) true 
-            (c (skip-two L) k)
+            (has (skip-two L) k)
         ))
       ))
-      (fun (method key) 
-           (if (= method "get") (f L key) 
-           (if (= method "has") (c L key)
-               (+ "no-such-method" method)
-           )))
+      (fun (method key ?val) 
+           (if (= method "get") (get L key) 
+           (if (= method "has") (has L key)
+           (if (= method "put") (mut L (cons-2 key ?val L))
+               (+ "no such method" method)
+           ))))
   )))
 
   (def my-list (list "a" "b" "c" "d"))
@@ -97,6 +102,9 @@
   (print (+ "B:" (my-map "has" "b")))
   (print (+ "C:" (my-map "has" "c")))
   (print (+ "D:" (my-map "has" "d")))
+  (my-map "put" "d" "X")
+  (print (+ "D:" (my-map "has" "d")))
+  (print (+ "D:" (my-map "get" "d")))
 
   (print (my-map "non-existant-method" "key"))
 )

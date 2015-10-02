@@ -234,6 +234,58 @@ var cases2 = [
   (z "x")
 )
 */
+
+// mapping
+/*
+(do 
+  (def first-equals (fun (L e) (= e (car L))))
+  (def skip-two (fun (L) (cdr (cdr L))))
+  (def second (fun (L) (car (cdr L))))
+
+  (def map (fun (L)
+    (do 
+      (def f (fun (L k)
+              (if (empty L) 
+                  "no-entry-for-key"
+                  (if (first-equals L k)
+                        (second L) 
+                        (f (skip-two L) k)
+                  )
+              )
+             )
+      )
+      (def c (fun (L k) 
+        (if (empty L) false
+            (if (first-equals L k) true 
+                (c (skip-two L) k)
+            )
+      )))
+      (fun (method key) 
+           (if (= method "get") (f L key) 
+           (if (= method "has") (c L key)
+               (+ "no-such-method" method)
+           )))
+  )))
+
+  (def my-list (list "a" "b" "c" "d"))
+  (def my-map (map my-list))
+
+  (print (my-map "get" "a"))
+  (print (my-map "get" "b"))
+  (print (my-map "get" "c"))
+  (print (my-map "get" "d"))
+
+  (print (+ "C:" (my-map "has" "c")))
+  (print (+ "A:" (my-map "has" "a")))
+  (print (+ "B:" (my-map "has" "b")))
+  (print (+ "C:" (my-map "has" "c")))
+  (print (+ "D:" (my-map "has" "d")))
+
+  (print (my-map "non-existant-method" "key"))
+)
+	
+)
+*/
 function findEnd(str, beginAt) {
     var count = 1;
     for (var i=beginAt + 1; i<str.length; i++) {
@@ -287,8 +339,9 @@ lazyOperators = {
 		var definedScope = scope.find(name);
 		if (definedScope != undefined) {
 			definedScope.set(name, value);
+		} else {
+		    console.log("trying to 'mut' %s but it does not exist in scopes.", name);
 		}
-		console.log("trying to 'mut' %s but it does not exist in scopes.", name);
 		return value;
 	},
     "fun": function (operands, scopes) {
@@ -314,10 +367,22 @@ lazyOperators = {
 
 var operators = {
     ">": function (a, b) { return a > b; },
-    "<": function (a, b) { return a < b; },
-    "=": function (a, b) { return a === b; },
+    "<": function (a, b) { 
+		// console.log("comparing %s with %s", a, b);
+		return a < b; 
+	},
+    "=": function (a, b) { 
+		// console.log("comparing %s with %s", a, b);
+		return a === b; 
+	},
     "not": function (a) { return ! a; },
-    "+": function (a, b) { return a + b; },
+    "+": function (a, b) { 
+	    var c = a + b;
+		if (typeof c == "string") {
+		    c = "\"" + c.replace(/\"/g, "") + "\"";
+		}
+	    return c; 
+    },
     "-": function (a, b) { return a - b; },
     "*": function (a, b) { return a * b; },
     "/": function (a, b) { return a / b; },
@@ -371,7 +436,7 @@ function evaluate(tree, scopes) {
             return val;
         }
     }	
-	// console.log(tree[0]);
+	//console.log(tree[0]);
     //console.log(JSON.stringify(tree));
     var operator = lazyOperators[tree[0]];
 	// console.log("operator: "+ operator);
@@ -415,7 +480,7 @@ function evaluate(tree, scopes) {
         var scopeName = funcName;
         
         if (params.length != operands.length) {
-            console.log("wrong number of args: %s, %s %s", name, params, args);
+           // console.log("wrong number of args: %s, %s %s", name, params, operands);
         }
         
         for (var i=0; i<params.length; i++) {
@@ -471,14 +536,23 @@ function parse(raw) {
             parts.push(parse(oprnd));
             
         } else { // current operand is a primitive (or an operator, with no parens (x ...) not: ((x)...
-            S = raw.indexOf(" ");
-            if (S == -1) {
-                parts.push(raw);
+            var S = raw.indexOf(" ");
+			
+			if (raw[0] == '"') {
+			    var secondQuote = raw.indexOf('"', 1);
+				S = raw.indexOf(" ", secondQuote);
+			} 
+			var part;
+            
+			if (S == -1) {
+			    part = raw;
                 raw = "";
             } else {
-                parts.push(raw.slice(0, S).trim());
+			    part = raw.slice(0, S).trim();
                 raw = raw.slice(S + 1);
             }
+			
+			parts.push(part);
         }
         
         raw = raw.trim();
@@ -490,6 +564,26 @@ function parse(raw) {
 var verbose = true;
 var failsOnly = false;
 
+function removeComments(text) {
+    return text.split("\n").map(function (line) {
+		
+		var inString = false;
+		for (var i=1; i<line.length; i++) {
+		    var prev = line[i-1];
+			var curr = line[i];
+			if (curr == '"') {
+				inString = !inString;
+			} else if (!inString && (curr+prev) == "//") {
+				return line.substring(0, i - 1);
+			}
+		}
+		return line;
+	}).join("\n");
+}
+
+console.log("REMOVE COMMENTS: " + (
+			removeComments("blah//somethin\nblahblah //\nb\nlahblahblah \"hello\" //morecomment") ==
+						   "blah"+       "\nblahblah "+"\nb\nlahblahblah \"hello\" "));
 
 function test(msg, expected, actual, eq) {
     var passed = eq(expected, actual);

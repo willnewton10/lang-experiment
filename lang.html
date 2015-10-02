@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html>
-<head></head>
-<body>
-	<h1>Language Experiment</h1>
+<head>
     <style>
 		body {
 			color: white;
@@ -25,6 +23,10 @@
 			color: #7D7;
 		}
 	</style>
+</head>
+<body>
+	<h1>Language Experiment</h1>
+
 	<textarea cols=50 id='out' class='text'></textarea>
 	<!--<div id='in' class='text' 
 		contentEditable="true" >
@@ -65,20 +67,19 @@
 		
 		function runScript(what) {
 		    out.textContent = "";
-			var command = input.value; //input.textContent;
+			var command = input.value; 
 			console.log(command);
 			
 			if (what == "run") {				
 				var scope = Scope(function print(a) {
-					console.log('printing...');
 					out.innerHTML += a + "\n";
 				});	
-				
-				var result = evaluate(parse(command), scope);
-				//out.innerHTML = result + "<br />";
+				var parsed = parse(removeComments(command));
+				console.log("Parsed: " + JSON.stringify(parsed));
+				var result = evaluate(parsed, scope);
 			}
 			else if (what == "parse") {
-				//command = command.replace(/\u00A0/g, ' ');
+
 				for (var i=0; i<command.length; i++) {
 				    console.log("char: " + command.charCodeAt(i));
 					if (command.charCodeAt(i) == 160) {
@@ -90,7 +91,6 @@
 				console.log(JSON.stringify(parsed));
 			}
 		}
-	
 	</script>
 </body>
 </html>
