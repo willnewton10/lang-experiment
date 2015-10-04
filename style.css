@@ -11,10 +11,23 @@ body {
 	background-color: black;
 }
 #in {
-	height: 400px;
+	height: 380px;
 	color: #DDF;
 }
 #out {
 	height: 180px; 
-	color: #7D7;
+	/*color: #7D7;*/
+	color: #3AF;
+}
+.btn {
+	border: 2px solid white;
+	background-color: black;
+	color: white;
+	font-family: monospace;
+	font-size: 105%;
+}
+.btn:hover {
+	background-color: #3AF;
+	color: black;
+	font-weight: bold;
 }
