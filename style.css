@@ -1,0 +1,20 @@
+body {
+	color: white;
+	background-color: #224;
+	font-family: monospace;
+}
+.text {
+	width: 100%;
+	border: 1px solid gray;
+	overflow-y: scroll;
+	font-size: 100%;
+	background-color: black;
+}
+#in {
+	height: 400px;
+	color: #DDF;
+}
+#out {
+	height: 180px; 
+	color: #7D7;
+}
