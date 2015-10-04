@@ -5,6 +5,7 @@ input.focus();
 
 function print(a) {
 	out.innerHTML += a + "\n";
+	out.scrollTop = out.scrollHeight;
 }
 function clear() {
 	out.innerHTML = "";
@@ -30,5 +31,9 @@ function runScript(what) {
 		print("Running tests...");	
 		runTests(print);
 		print("Running tests complete.");
+	} else if (what == "openCodeInNewTab") {
+		var myWindow = window.open("data:text," + encodeURIComponent(command),
+			"_blank");
+		myWindow.focus();
 	}
 }
