@@ -38,6 +38,9 @@
 	<input class='btn' type='button' value='Parse' onclick='runScript("parse")' />
 	<input class='btn' type='button' value='Run Tests' onclick='runScript("runTests")' />
 	<input class='btn' type='button' value='Export' onclick='runScript("openCodeInNewTab")' />
+    
+	<input class='btn' type='button' value='Import:' />
+	<input class='upload' type='file' accept='text/plain' onchange='openFile(event)'><br>
 	
 	<script src='parse.js'></script>
 	<script src='lang.js'></script>

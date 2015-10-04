@@ -10,6 +10,13 @@ function print(a) {
 function clear() {
 	out.innerHTML = "";
 }
+function clearInput() {
+	input.value = "";
+}
+function printInput(code) {
+	input.value += code;
+	// input.scrollTop = input.scrollHeight;
+}
 
 var validate = createValidator(print);
 	
@@ -37,3 +44,17 @@ function runScript(what) {
 		myWindow.focus();
 	}
 }
+
+
+var openFile = function(event) {
+	var fileInput = event.target;
+
+	var reader = new FileReader();
+	reader.onload = function() {
+		var code = reader.result;
+		clearInput();
+		printInput(code);
+	};
+	
+	reader.readAsText(fileInput.files[0]);
+};
