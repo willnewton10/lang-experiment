@@ -1,0 +1,94 @@
+(do 
+  (def for 
+     (fun (i f)
+      (do 
+         (def _for (fun (j) 
+           (if (= j i) 
+               "done" 
+               (do (f j) (_for (+ 1 j))))))
+         (_for 0)
+      )
+     )
+  )
+
+  (def ge (fun (i k) (or (= i k) (> i k))))
+  (print (ge 1 2))
+  (print (ge 2 1))
+
+  (def int-div (fun (i j) (do
+     (def f (fun (k p) 
+        (if (ge k i) (if (= k i) p (- p 1)) 
+                     (f (+ k j) (+ 1 p))
+        )
+     ))
+     (f 0 0)
+  )))
+
+  (def mod (fun (i j) (do
+    (def d (int-div i j))
+    (def e (* j d))
+    (def g (- i e))
+    g
+  )))
+
+  (def test (fun (a b) 
+    (if (= a b) (print "passed") 
+                (+ "failed: " (+ a (+ " != " b))))
+  ))
+
+  (test (int-div 5 3) 1)
+  (test (int-div 13 4) 3)
+  (test (int-div 5 1) 5)
+  (test (int-div 4 4) 1)
+  (test (int-div 4 5) 0)
+  (test (int-div 4 3) 1)
+
+  (test (mod 5 3) 2)
+  (test (mod 3 5) 0)
+  (test (mod 12 5) 2)
+
+  (def divisible (fun (i j) (= (mod i j) 0)))
+  (test (divisible 3 5) false)
+  (test (divisible 3 3) true)
+
+  (def prime? (fun (i) (do
+      (def p (fun (k) 
+        (if (divisible i k) false 
+        (if (> (* k k) i) true
+            (p (+ k 1))
+        ))
+      ))
+      (and (> i 1) (p 2))
+  )))
+
+  (test (prime? 3) true)
+  (test (prime? 4) false)
+
+  (def primes @)
+  (for 100 (fun (n) 
+     (if (prime? n)  (do (print n) (mut primes (cons n primes))) 
+                    "placeholder")
+  ))
+
+  (def each (fun (L f)
+    (if (empty L) "done"
+        (do (f (car L)) 
+            (each (cdr L) f))
+    )
+  ))
+
+//  (each (list 1 2 3) (fun (i) (print i)))
+
+  (def join (fun (L separator)
+    (if (empty L) ""
+    (do
+      (def joined (car L))
+      (each (cdr L) (fun (e)
+         (mut joined (+ e (+ separator joined)))
+      ))
+      joined
+  ))))
+ 
+ (print (join primes ", "))
+)
+	
