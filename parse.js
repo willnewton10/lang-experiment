@@ -40,6 +40,9 @@ function createValidator(printFunction) {
     
 	return function isValid(tree, needFunction) {
         var needFunction = needFunction || false;
+		if (tree.length == 0) {
+			return !needFunction;
+		}
         var first = tree[0];
         var firstIsOk;
         

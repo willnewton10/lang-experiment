@@ -114,6 +114,23 @@
 
   (def r20_prime (filter r20 prime?))
   (print (+ "range-20-prime: " (join r20_prime ":")))
+ 
+  (def undefined? (fun (a) 
+    (and (not (= a true)) 
+    (and (not (= a false))
+    (and (= (or a true) true)
+         (= (or a false) false)
+    )))
+  ))
 
+  (def undefined (fun () (do
+    (def f (fun (a) a))
+    (f) // no args
+  )))
+
+  (def u (undefined))
+
+  (def t (list u "" (- 0 1) (- 0 100) false true))
+  (each t (fun (e) (print (undefined? e))))
 )
 	
