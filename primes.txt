@@ -1,19 +1,24 @@
 (do 
-  (def for 
-     (fun (i f)
-      (do 
-         (def _for (fun (j) 
-           (if (= j i) 
-               "done" 
-               (do (f j) (_for (+ 1 j))))))
-         (_for 0)
+  
+  (def test (fun (a b) 
+    (if (= a b) (print "passed") 
+                (+ "failed: " (+ a (+ " != " b))))
+  ))
+
+  (def for (fun (i f) (do 
+    (def _for (fun (j) 
+      (if (= j i) "done" 
+          (do (f j) 
+              (_for (+ 1 j))
+          )
       )
-     )
-  )
+    ))
+    (_for 0)
+  )))
 
   (def ge (fun (i k) (or (= i k) (> i k))))
-  (print (ge 1 2))
-  (print (ge 2 1))
+  (test (ge 1 2) false)
+  (test (ge 2 1) true)
 
   //assumes i,j are positive...
   (def int-div (fun (i j) (do
@@ -31,11 +36,6 @@
     (def g (- i e))
     g
   )))
-
-  (def test (fun (a b) 
-    (if (= a b) (print "passed") 
-                (+ "failed: " (+ a (+ " != " b))))
-  ))
 
   (test (int-div 5 3) 1)
   (test (int-div 13 4) 3)
@@ -65,19 +65,12 @@
   (test (prime? 3) true)
   (test (prime? 4) false)
 
-  (def primes @)
-  (for 100 (fun (n) 
-     (if (prime? (- 100 n))  (mut primes (cons (- 100 n) primes))
-                    "placeholder")
-  ))
-
   (def each (fun (L f)
     (if (empty L) "done"
         (do (f (car L)) 
             (each (cdr L) f))
     )
   ))
-
   (each (list 1 2 3) (fun (i) (print i)))
 
   (def join (fun (L separator)
@@ -90,18 +83,6 @@
       joined
   ))))
  
-  (print (+ "primes, joined: " (join primes ", ")))
-
-  (def get-primes (fun (n) (do
-    (def f (fun (a)
-      (if (> a n) @
-      (if (prime? a) (cons a (f (+ a 1)))
-          (f (+ a 1))   
-      ))
-    ))
-    (f 1)
-  )))
-
   (def range (fun (n m) (do
     (if (not m) (print "function 'range' must have second parameter") "placeholder")
     (def f (fun (a)
@@ -134,6 +115,5 @@
   (def r20_prime (filter r20 prime?))
   (print (+ "range-20-prime: " (join r20_prime ":")))
 
-  (print (+ "primes-2, joined: " (join (get-primes 100) ", ")))
 )
 	
