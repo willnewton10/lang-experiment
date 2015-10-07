@@ -15,6 +15,7 @@
   (print (ge 1 2))
   (print (ge 2 1))
 
+  //assumes i,j are positive...
   (def int-div (fun (i j) (do
      (def f (fun (k p) 
         (if (ge k i) (if (= k i) p (- p 1)) 
@@ -58,7 +59,7 @@
             (p (+ k 1))
         ))
       ))
-      (and (> i 1) (p 2))
+      (or (= i 2) (p 2))
   )))
 
   (test (prime? 3) true)
@@ -66,7 +67,7 @@
 
   (def primes @)
   (for 100 (fun (n) 
-     (if (prime? n)  (do (print n) (mut primes (cons n primes))) 
+     (if (prime? (- 100 n))  (mut primes (cons (- 100 n) primes))
                     "placeholder")
   ))
 
@@ -77,18 +78,62 @@
     )
   ))
 
-//  (each (list 1 2 3) (fun (i) (print i)))
+  (each (list 1 2 3) (fun (i) (print i)))
 
   (def join (fun (L separator)
     (if (empty L) ""
     (do
       (def joined (car L))
       (each (cdr L) (fun (e)
-         (mut joined (+ e (+ separator joined)))
+         (mut joined (+ joined (+ separator e)))
       ))
       joined
   ))))
  
- (print (join primes ", "))
+  (print (+ "primes, joined: " (join primes ", ")))
+
+  (def get-primes (fun (n) (do
+    (def f (fun (a)
+      (if (> a n) @
+      (if (prime? a) (cons a (f (+ a 1)))
+          (f (+ a 1))   
+      ))
+    ))
+    (f 1)
+  )))
+
+  (def range (fun (n m) (do
+    (if (not m) (print "function 'range' must have second parameter") "placeholder")
+    (def f (fun (a)
+      (if (> a m) @
+          (cons a (f (+ a 1)))
+      )
+    ))
+    (f n)
+  )))
+
+  (def r20 (range 2 20))
+  (def jr20 (join r20 ","))
+  (print (+ "range, joined: " jr20)))
+
+  (def filter (fun (L pred) (do
+    (def f (fun (A)
+      (if (empty A) @
+      (if (pred (car A)) 
+          (cons (car A) (f (cdr A)))
+                        (f (cdr A))   
+      ))
+    ))
+    (f L)    
+  )))
+
+  (def even? (fun (a) (divisible a 2)))
+  (def r20_even (filter r20 even?))
+  (print (+ "range-20-even: " (join r20_even ":")))
+
+  (def r20_prime (filter r20 prime?))
+  (print (+ "range-20-prime: " (join r20_prime ":")))
+
+  (print (+ "primes-2, joined: " (join (get-primes 100) ", ")))
 )
 	
