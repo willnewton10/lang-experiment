@@ -2,7 +2,7 @@
   
   (def test (fun (a b) 
     (if (= a b) (print "passed") 
-                (+ "failed: " (+ a (+ " != " b))))
+                (print (+ "failed: " (+ a (+ " != " b)))))
   ))
 
   (def for (fun (i f) (do 
@@ -16,14 +16,15 @@
     (_for 0)
   )))
 
-  (def ge (fun (i k) (or (= i k) (> i k))))
-  (test (ge 1 2) false)
-  (test (ge 2 1) true)
+  (def >= (fun (i k) (or (= i k) (> i k))))
+  (def <= (fun (i k) (or (= i k) (< i k))))
+  (test (>= 1 2) false)
+  (test (>= 2 1) true)
 
   //assumes i,j are positive...
   (def int-div (fun (i j) (do
      (def f (fun (k p) 
-        (if (ge k i) (if (= k i) p (- p 1)) 
+        (if (>= k i) (if (= k i) p (- p 1)) 
                      (f (+ k j) (+ 1 p))
         )
      ))
@@ -45,7 +46,7 @@
   (test (int-div 4 3) 1)
 
   (test (mod 5 3) 2)
-  (test (mod 3 5) 0)
+  (test (mod 3 5) 3)
   (test (mod 12 5) 2)
 
   (def divisible (fun (i j) (= (mod i j) 0)))
@@ -114,13 +115,16 @@
 
   (def r20_prime (filter r20 prime?))
   (print (+ "range-20-prime: " (join r20_prime ":")))
- 
+
+  (def != (fun (i j) (not (= i j))))
+  
+  (test (!= 3 4) true)
+  (test (!= 3 3) false)
+
   (def undefined? (fun (a) 
-    (and (not (= a true)) 
-    (and (not (= a false))
-    (and (= (or a true) true)
-         (= (or a false) false)
-    )))
+    (and (!= a false)
+         (not (or a false) )
+    )
   ))
 
   (def undefined (fun () (do
@@ -130,7 +134,18 @@
 
   (def u (undefined))
 
-  (def t (list u "" (- 0 1) (- 0 100) false true))
+  (def t (list u "" (- 0 1) (- 0 100) false true qwerty))
   (each t (fun (e) (print (undefined? e))))
+
+  (def a 3)
+  (print (+ "before-function: " a))
+  (def b (fun (a) (do 
+     (print (+ "inside-function 1: " a))
+     (mut a 4)                              // shows that mutation only works on CLOSEST scope.
+     (print (+ "inside-function 2: " a))
+  )))
+  (b "some-value")
+  (print (+ "after-function: " a))
+  
 )
 	

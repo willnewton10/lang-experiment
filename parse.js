@@ -40,7 +40,7 @@ function createValidator(printFunction) {
     
 	return function isValid(tree, needFunction) {
         var needFunction = needFunction || false;
-		if (tree.length == 0) {
+		if (tree.length == 0) { // allow functions defined with 0 args
 			return !needFunction;
 		}
         var first = tree[0];
