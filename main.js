@@ -4,11 +4,11 @@ var input = document.getElementById('in');
 input.focus();
 
 function print(a) {
-	out.innerHTML += a + "\n";
+	out.value += a + "\n";
 	out.scrollTop = out.scrollHeight;
 }
 function clear() {
-	out.innerHTML = "";
+	out.value = "";
 }
 function clearInput() {
 	input.value = "";
@@ -19,9 +19,9 @@ function printInput(code) {
 }
 
 var validate = createValidator(print);
-	
+
 function runScript(what) {
-	clear()
+	clear();
 	var command = input.value; 
 	var parsed = parse(removeComments(command));
 	
