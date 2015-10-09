@@ -1,60 +1,55 @@
-var printDo = false;
-
-
-	//macro brainstorming:
-	/*				'(fn f a b (+ a b)) '+
-					'(def f (fun (a b) (+ a b)) '+
-					'(macro (fn #0 #* #L) ' +
-						   '(def #0 (fun (#*) #L))) ' +
-					
-					'(list 1 2 3) ' +
-					'(cons 1 (cons 2 (cons 3 @))) ' +
-					'(macro (list #0 #*) '+
-						   '(#*=0 (cons #0 @)) '+
-						   '(#*>0 (cons #0 (list #*)))) ' +
-					*/
-
+//macro brainstorming:
+/*	'(fn f a b (+ a b)) '+
+	'(def f (fun (a b) (+ a b)) '+
+	'(macro (fn #0 #* #L) ' +
+		   '(def #0 (fun (#*) #L))) ' +
+	
+	'(list 1 2 3) ' +
+	'(cons 1 (cons 2 (cons 3 @))) ' +
+	'(macro (list #0 #*) '+
+		   '(#*=0 (cons #0 @)) '+
+		   '(#*>0 (cons #0 (list #*)))) ' +
+	*/
 
 var lazyOperators = null;
 lazyOperators = {
-    "and": function (operands, scopes) {
+    "and": function (operands, scopes, isReturnVal) {
         for (var i=0; i<operands.length; i++) {
-            if (! evaluate(operands[i], scopes)) {
+            if (! evaluate(operands[i], scopes, false)) {
                 return false;
             }
         }
         return true;
     },
-    "or": function (operands, scopes) {
+    "or": function (operands, scopes,isReturnVal) {
         for (var i=0; i<operands.length; i++) {
-            if (evaluate(operands[i], scopes)) {
+            if (evaluate(operands[i], scopes, false)) {
                 return true;
             }
         }
         return false;
     },
-    "if": function (operands, scopes) {
-        var b = evaluate(operands[0], scopes);
-        return b ? evaluate(operands[1], scopes) : evaluate(operands[2], scopes);
-    },
-    "do": function (operands, scopes) {
-        var result = null;
-        operands.forEach(function doEval(operand) {
-            result = evaluate(operand, scopes);
-            if (printDo) console.log(result);
+    "if": function (operands, scopes, isReturnVal) {
+        var b = evaluate(operands[0], scopes, false);
+		var toEval = b ? 1 : 2;
+        return evaluate(operands[toEval], scopes, isReturnVal);
+	},
+    "do": function (operands, scopes, isReturnVal) {
+        operands.slice(0, operands.length -1).forEach(function (operand) {
+            result = evaluate(operand, scopes, false);
         });
-        return result;
+		return evaluate(operands[operands.length - 1], scopes, isReturnVal);
     },
-    "def" : function (operands, scopes) {
+    "def" : function (operands, scopes, isReturnVal) {
         var name = operands[0];
-        var value = evaluate(operands[1], scopes);
+        var value = evaluate(operands[1], scopes, false);
         var already = scopes.get(name) != undefined;
         //if (already) console.log("value with name %s already exists in this scope", already);
         scopes.set(name, value);
     },
-	"mut": function (operands, scope) {
+	"mut": function (operands, scope, isReturnVal) {
 		var name = operands[0];
-        var value = evaluate(operands[1], scope);
+        var value = evaluate(operands[1], scope, false);
 		var definedScope = scope.find(name);
 		if (definedScope != undefined) {
 			definedScope.set(name, value);
@@ -63,7 +58,7 @@ lazyOperators = {
 		}
 		return value;
 	},
-    "fun": function (operands, scopes) {                  
+    "fun": function (operands, scopes, isReturnVal) {                  
         return {
 			type: "fun",
             params: operands[0],
@@ -71,7 +66,7 @@ lazyOperators = {
 			scopes: scopes
         };
     },
-	"list": function (operands, scopes) {
+	"list": function (operands, scopes, isReturnVal) {
 		if (operands.length == 0) {
 			console.log("warning! empty list");
 		}
@@ -79,7 +74,7 @@ lazyOperators = {
 			["cons", operands[0], "@"] :
 			["cons", operands[0], ["list"].concat(operands.slice(1))];
 		// console.log('expanded', expanded);
-		return evaluate(expanded, scopes);
+		return evaluate(expanded, scopes, false);
 	}
 };
 
@@ -132,8 +127,9 @@ var reString = /^"[^"]*"$/;
 
 //console.log(reBoolean.test("false"));
 
-function evaluate(tree, scopes) {
-   
+function evaluate(tree, scopes, isReturnVal) {
+    isReturnVal = isReturnVal || false;
+	
     // console.log(JSON.stringify(tree));
     if (typeof tree == 'string') {
         
@@ -154,12 +150,12 @@ function evaluate(tree, scopes) {
 	if (typeof tree[0] == 'string') {
         operator = lazyOperators[tree[0]];
 		if (operator != undefined) {
-			return operator.call(null, tree.slice(1), scopes);   
+			return operator.call(null, tree.slice(1), scopes, isReturnVal);   
 		}
 	}
 	
 	var operands = tree.slice(1).map(function (operand) {
-        return evaluate(operand, scopes);
+        return evaluate(operand, scopes, false);
     });
     
 	if (operators[tree[0]] != undefined) {
@@ -177,29 +173,40 @@ function evaluate(tree, scopes) {
 		funcName = tree[0];
 		func = scopes.get(funcName);
 	} else if (tree[0][0] == 'fun') {
-		func = evaluate(tree[0], scopes);
+		// function is anonymous
+		func = evaluate(tree[0], scopes, false);
 		funcName = "?";
 	}
-    // console.log(JSON.stringify(tree[0]));
 	
-	var shadowingScope = new ShadowScope(funcName, func.params, operands, func.scopes);
+	var funcScope = (func == scopes.func && isReturnVal) ? 
+		scopes.initBindings(operands, true) : 
+		new ShadowScope(func, funcName, operands);
 	
-    return evaluate(func.body, shadowingScope);
+    return evaluate(func.body, funcScope, true);
 }
 
-function ShadowScope(scopeName, params, args, parentScope) {
-	this.scopeName = scopeName;
-	this.parentScope = parentScope;
+function ShadowScope(func, funcName, args) {
+	this.name = funcName;
+	this.func = func;
+	this.parentScope = func.scopes;
+	this.out = func.scopes.out;
+	this.initBindings(args);
+	//console.log("scope created: " + this.name);
+}
+ShadowScope.prototype.initBindings = function (args, tail) {
+    if (tail) {
+		console.log("tail recursion occurred: " + this.name);
+	}
 	this.scope = {};
-	this.out = parentScope.out;
-	
+	var params = this.func.params;
 	for (var i=0; i<params.length; i++) {
-		// console.log("in scope [%s], setting %s to %s", scopeName, params[i], JSON.stringify(args[i]));
+		// console.log("in scope [%s], setting %s to %s", this.name, params[i], JSON.stringify(args[i]));
 		this.scope[ params[i] ] = args[i];   
     }
 	if (params.length != args.length) {
-	   // console.log("wrong number of args: %s, %s %s", name, params, operands);
-	}        
+	   // console.log("wrong number of args: %s, %s %s", this.name, params, args);
+	}    
+	return this;
 }
 ShadowScope.prototype.has = function (name) {
 	return this.scope.hasOwnProperty(name);
@@ -208,11 +215,11 @@ ShadowScope.prototype.get = function (name) {
 	if (this.has(name)) {
 		return this.scope[name];
 	} 
-	//console.log("shadowing scope %s cannot find value %s", scopeName, name);
+	//console.log("shadowing scope %s cannot find value %s", this.name, name);
 	return this.parentScope.get(name);
 };
 ShadowScope.prototype.set = function (name, val) {
-	// console.log("in scope %s, setting %s to %s", this.scopeName, name, JSON.stringify(val));
+	// console.log("in scope %s, setting %s to %s", this.name, name, JSON.stringify(val));
 	this.scope[name] = val;
 };
 ShadowScope.prototype.find = function (name) {
